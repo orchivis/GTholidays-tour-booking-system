@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour Packages</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .package-item {
+            cursor: pointer;
+        }
+        .package-item:hover {
+            background-color: #f7fafc;
+        }
+    </style>
+    <script>
+        let selectedPackage = null; // Store the selected package object
+
+        function getTourPackages() {
+            const apiUrl = "https://fbk7tgys17.execute-api.ap-south-1.amazonaws.com/dev/packages";
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const packagesContainer = document.getElementById("packages-container");
+                    packagesContainer.innerHTML = '';
+
+                    if (data && data.length > 0) {
+                        data.forEach(package => {
+                            const packageDiv = document.createElement("div");
+                            packageDiv.className = "bg-white rounded-lg shadow-md p-4 mb-4 package-item";
+                            packageDiv.innerHTML = `
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="package-${package.PackageID}" name="package" value="${package.PackageID}" class="mr-2 h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <div>
+                                        <h2 class="text-xl font-semibold text-blue-600 mb-2">${package.Name}</h2>
+                                        <p class="text-green-600 font-bold mb-1">Price: $${package.Price}</p>
+                                        <p class="text-gray-500">Package ID: ${package.PackageID}</p>
+                                    </div>
+                                </div>
+                            `;
+                            packagesContainer.appendChild(packageDiv);
+                            // No click event here, checkboxes handle selection
+                        });
+                        const selectButton = document.createElement("button");
+                        selectButton.textContent = "Select";
+                        selectButton.className = "bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out mt-4";
+                        selectButton.id = "select-button";
+                        selectButton.addEventListener('click', handlePackageSelect);
+                        packagesContainer.appendChild(selectButton);
+                    } else {
+                        packagesContainer.innerHTML = "<p class='text-gray-500'>No tour packages found.</p>";
+                    }
+                })
+                .catch(error => {
+                    const packagesContainer = document.getElementById("packages-container");
+                    packagesContainer.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+                    console.error("Failed to fetch tour packages:", error);
+                });
+        }
+
+        function handlePackageSelect() {
+            const checkboxes = document.querySelectorAll('input[name="package"]:checked');
+            if (checkboxes.length === 0) {
+                alert("Please select a tour package.");
+                return;
+            }
+
+            if (checkboxes.length > 1) {
+                alert("Please select only one tour package.");
+                return;
+            }
+
+            const selectedPackageId = checkboxes[0].value; // Get selected package ID
+            const selectedPackageElement = document.getElementById(`package-${selectedPackageId}`);
+            const selectedPackageName = selectedPackageElement.parentElement.querySelector('h2').textContent;
+            const selectedPackagePrice = selectedPackageElement.parentElement.querySelector('p').textContent.replace('Price: $', '');
+
+            selectedPackage = {
+                PackageID: selectedPackageId,
+                Name: selectedPackageName,
+                Price: selectedPackagePrice
+            };
+
+            const packagesContainer = document.getElementById("packages-container");
+            packagesContainer.innerHTML = `
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-semibold text-blue-700 mb-4">Selected Package</h2>
+                    <p class="text-gray-700 mb-2">Package ID: ${selectedPackage.PackageID}</p>
+                    <p class="text-gray-700 mb-2">Name: ${selectedPackage.Name}</p>
+                    <p class="text-gray-700 mb-4">Price per person: $${selectedPackage.Price}</p>
+                    <p class="text-gray-700 mb-4">Enter your details:</p>
+                    <form id="booking-form" class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
+                            <input type="text" id="name" name="name" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div>
+                            <label for="contact" class="block text-gray-700 text-sm font-bold mb-2">Contact Number:</label>
+                            <input type="tel" id="contact" name="contact" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email ID:</label>
+                            <input type="email" id="email" name="email" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div>
+                            <label for="adults" class="block text-gray-700 text-sm font-bold mb-2">Adults:</label>
+                            <input type="number" id="adults" name="adults" min="1" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" onchange="calculateTotal()">
+                        </div>
+                        <div>
+                            <label for="children" class="block text-gray-700 text-sm font-bold mb-2">Children:</label>
+                            <input type="number" id="children" name="children" min="0" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"  onchange="calculateTotal()">
+                        </div>
+                        <div>
+                            <label for="total" class="block text-gray-700 text-sm font-bold mb-2">Total Price:</label>
+                            <input type="text" id="total" name="total" readonly class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full shadow-md focus:outline-none focus:shadow-outline">
+                            Submit Booking
+                        </button>
+                    </form>
+                </div>
+            `;
+
+            const form = document.getElementById('booking-form');
+            form.addEventListener('submit', handleFormSubmit);
+            calculateTotal(); //call calculateTotal() on initial form load
+
+        }
+
+        function calculateTotal() {
+            const adults = document.getElementById('adults').value;
+            const children = document.getElementById('children').value;
+            const pricePerPerson = selectedPackage.Price;
+            const total = (adults * pricePerPerson) + (children * (pricePerPerson/2)); // Assuming half price for children
+            document.getElementById('total').value = total;
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const name = document.getElementById('name').value;
+            const contact = document.getElementById('contact').value;
+            const email = document.getElementById('email').value;
+            const adults = document.getElementById('adults').value;
+            const children = document.getElementById('children').value;
+            const total = document.getElementById('total').value;
+
+
+            const bookingData = {
+                packageId: selectedPackage.PackageID,
+                packageName: selectedPackage.Name,
+                pricePerPerson: selectedPackage.Price,
+                name: name,
+                contact: contact,
+                email: email,
+                adults: adults,
+                children: children,
+                totalPrice: total
+            };
+
+            const apiUrl = "https://fbk7tgys17.execute-api.ap-south-1.amazonaws.com/dev/booking";
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(bookingData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('Your booking is saved. We will contact you soon!');
+                console.log('Booking response:', data);
+                // Optionally, redirect to a confirmation page or show a success message
+            })
+            .catch(error => {
+                alert('Booking failed!');
+                console.error('Error submitting booking:', error);
+                // Optionally, display an error message to the user
+            });
+        }
+
+        function getPackageDetails(packageId) {
+            const apiUrl = `https://fbk7tgys17.execute-api.ap-south-1.amazonaws.com/dev/packagedetails?packageid=${packageId}`;
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Handle the package details data here.
+                    alert(JSON.stringify(data, null, 2));
+                    console.log("Package Details:", data);
+                })
+                .catch(error => {
+                    console.error("Failed to fetch package details:", error);
+                    alert(`Error fetching package details: ${error.message}`);
+                });
+        }
+
+        getTourPackages(); // Call on page load
+    </script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-semibold text-gray-800 mb-6 text-center">Available Tour Packages</h1>
+        <div id="packages-container" class="mt-4">
+            <p class="text-gray-600 text-center">Loading tour packages...</p>
+        </div>
+    </div>
+</body>
+</html>
