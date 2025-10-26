@@ -1,13 +1,13 @@
 variable "state_bucket_name" {
   description = "S3 bucket name for storing Terraform state"
   type        = string
-  default     = "aws-dev-orchivis-usecase1-tfstate"
+  default     = local.state_bucket_name
 }
 
 variable "dynamodb_table_name" {
   description = "DynamoDB table for Terraform state locking"
   type        = string
-  default     = "aws-dev-orchivis-usecase1-locks"
+  default     = local.dynamodb_table_name
 }
 
 variable "aws_region" {

@@ -32,14 +32,14 @@ jobs:
         run: terraform init
         working-directory: ./tf
 
-      - name: Select or Create Workspace (d)
-        run: terraform workspace select d || terraform workspace new d
+      - name: Select or Create Workspace (dev)
+        run: terraform workspace select dev || terraform workspace new dev
         working-directory: ./tf
 
-      - name: Terraform Plan (d)
+      - name: Terraform Plan (dev)
         run: terraform plan -out=tfplan
         working-directory: ./tf
 
-      - name: Terraform Apply (d)
+      - name: Terraform Apply (dev)
         run: terraform apply -auto-approve tfplan
         working-directory: ./tf

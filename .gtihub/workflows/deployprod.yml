@@ -1,0 +1,42 @@
+name: "GT Holidays - Prod Deployment (p)"
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::586308082177:role/gokilatestdeployrole
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./tf
+
+      - name: Select or Create Workspace (prod)
+        run: terraform workspace select prod || terraform workspace new prod
+        working-directory: ./tf
+
+      - name: Terraform Plan (prod)
+        run: terraform plan -out=tfplan
+        working-directory: ./tf
+
+      - name: Terraform Apply (prod)
+        run: terraform apply -auto-approve tfplan
+        working-directory: ./tf
