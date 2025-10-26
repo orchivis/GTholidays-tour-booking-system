@@ -1,10 +1,20 @@
 # Lambda code bucket
-resource "aws_s3_bucket" "lambda_code" {
-  bucket = var.lambda_s3_bucket
+resource "aws_s3_bucket" "buckets" {
+  for_each = local.buckets
+  bucket   = each.value.name
+
+  tags = {
+  Environment = terraform.workspace
+  Project     = "gtholidays"
+  ManagedBy   = "Terraform"
+  }
 }
 
-resource "aws_s3_bucket_versioning" "lambda_code" {
-  bucket = aws_s3_bucket.lambda_code.id
+# Enable versioning where needed
+resource "aws_s3_bucket_versioning" "versioning" {
+  for_each = { for k, v in local.buckets : k => v if v.versioning }
+  bucket   = aws_s3_bucket.buckets[each.key].id
+
   versioning_configuration {
     status = "Enabled"
   }
@@ -12,11 +22,19 @@ resource "aws_s3_bucket_versioning" "lambda_code" {
 
 # Static website bucket
 resource "aws_s3_bucket" "static_site" {
-  bucket = var.website_s3_bucket
+  bucket = local.website_s3_bucket
+
+  tags = {
+  Environment = terraform.workspace
+  Project     = "gtholidays"
+  ManagedBy   = "Terraform"
+  }
 }
 
-resource "aws_s3_bucket_website_configuration" "static_site" {
-  bucket = aws_s3_bucket.static_site.id
+# Configure website hosting where needed
+resource "aws_s3_bucket_website_configuration" "website" {
+  for_each = { for k, v in local.buckets : k => v if v.website }
+  bucket   = aws_s3_bucket.buckets[each.key].id
 
   index_document {
     suffix = "index.html"

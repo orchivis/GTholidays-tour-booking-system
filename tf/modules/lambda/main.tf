@@ -1,17 +1,25 @@
 resource "aws_lambda_function" "this" {
-  function_name = var.function_name
-  s3_bucket     = var.s3_bucket
-  s3_key        = var.s3_key
-  runtime       = var.runtime
-  handler       = var.handler
-  timeout       = var.timeout
-  memory_size   = var.memory_size
-  role          = aws_iam_role.lambda_exec.arn
+  for_each      =local.lambdas
+  function_name =each.value.function_name
+  s3_bucket     =each.value.s3_bucket
+  s3_key        =each.value.s3_key
+  runtime       =each.value.runtime
+  handler       =each.value.handler
+  timeout       =each.value.timeout
+  memory_size   =each.value.memory_size
+  role          = aws_iam_role.lambda_exec[each.key].arn
+
+    tags = {
+    Environment = terraform.workspace
+    Project     = "gtholidays"
+    ManagedBy   = "Terraform"
+  }
 }
 
 # IAM Role for Lambda
 resource "aws_iam_role" "lambda_exec" {
-  name = "${var.function_name}-execution-role"
+  for_each = local.lambdas
+  name = "${each.value.function_name}-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -23,6 +31,12 @@ resource "aws_iam_role" "lambda_exec" {
       }
     }]
   })
+
+  tags = {
+  Environment = terraform.workspace
+  Project     = "gtholidays"
+  ManagedBy   = "Terraform"
+  }
 }
 
 # IAM Policy Attachment
