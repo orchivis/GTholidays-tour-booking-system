@@ -17,7 +17,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::586308082177:role/gokilatestdeployrole
+          role-to-assume: arn:aws:iam::586308082177:role/GT_Orchivis_Devops
           aws-region: us-east-1
 
       - name: Setup Terraform
